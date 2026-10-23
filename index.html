@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="hi" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal - Dashboard & Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', 'Noto Sans Devanagari', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      collection, 
+      onSnapshot, 
+      deleteDoc 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA8JTuMKKJiQLR6IDwv8Z7NdfuPZgWo9jM",
+      authDomain: "adarsh-seva-tech.firebaseapp.com",
+      databaseURL: "https://adarsh-seva-tech-default-rtdb.firebaseio.com",
+      projectId: "adarsh-seva-tech",
+      storageBucket: "adarsh-seva-tech.firebasestorage.app",
+      messagingSenderId: "260918056735",
+      appId: "1:260918056735:web:5d37617baa0675f9eb822a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // FIXED: Valid 4-segment and 2-segment Firestore paths (Strictly even segments)
+    // Collection: smartprint_shops (Root collection)
+    // Collection: smartprint_system -> doc: config
+    window.portalFirebase = {
+      app,
+      auth,
+      db,
+      doc,
+      setDoc,
+      getDoc,
+      deleteDoc,
+      collection,
+      onSnapshot
+    };
+
+    async function initAdminAuth() {
+      try {
+        await signInAnonymously(auth);
+        console.log("Admin Firebase Auth Connected:", auth.currentUser?.uid);
+        if (typeof window.startRealtimeListeners === 'function') {
+          window.startRealtimeListeners();
+        }
+      } catch (err) {
+        console.error("Admin Firebase Auth Error:", err);
+      }
+    }
+
+    initAdminAuth();
+  </script>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- AUTH SECTION (Login) -->
+  <section id="auth-section" class="min-h-full flex items-center justify-center p-4 sm:p-6 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+      <div class="p-8 text-center bg-gradient-to-b from-indigo-50 to-white border-b border-slate-100">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 mb-4">
+          <i class="ph ph-shield-check text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Super Admin Portal</h1>
+        <p class="text-sm text-slate-500 mt-1">Dukandar, Live Control & Realtime Sync</p>
+      </div>
+
+      <div class="p-8 space-y-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Admin Email / Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="ph ph-user-circle text-lg"></i>
+            </span>
+            <input type="text" id="login-username" value="admin@portal.com" 
+              class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Admin Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="ph ph-lock-key text-lg"></i>
+            </span>
+            <input type="password" id="login-password" value="admin123" 
+              class="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600">
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
+          <i class="ph ph-info text-base text-amber-600 mt-0.5 shrink-0"></i>
+          <span>Default: <strong>admin@portal.com</strong> / Password: <strong>admin123</strong></span>
+        </div>
+
+        <button onclick="handleLogin()" class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+          <span>Login to Admin Portal</span>
+          <i class="ph ph-arrow-right text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN ADMIN DASHBOARD SECTION -->
+  <section id="dashboard-section" class="hidden flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-slate-100">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
+      <div class="p-5 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+            AP
+          </div>
+          <div>
+            <h2 class="font-bold text-white text-base leading-tight">Admin Portal</h2>
+            <span class="text-xs text-emerald-400 font-medium flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Firebase Live
+            </span>
+          </div>
+        </div>
+        <button onclick="logout()" title="Logout" class="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 md:hidden">
+          <i class="ph ph-sign-out text-xl"></i>
+        </button>
+      </div>
+
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+        <button onclick="switchTab('overview')" id="nav-overview" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition bg-indigo-600 text-white">
+          <i class="ph ph-gauge text-xl"></i>
+          <span>Overview</span>
+        </button>
+        <button onclick="switchTab('merchants')" id="nav-merchants" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-storefront text-xl"></i>
+          <span>Dukandar (Shops)</span>
+          <span id="badge-merchants" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold">0</span>
+        </button>
+        <button onclick="switchTab('pricing')" id="nav-pricing" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-tag-chevron text-xl"></i>
+          <span>Trial & Plans Settings</span>
+        </button>
+        <button onclick="switchTab('helpline')" id="nav-helpline" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-headset text-xl"></i>
+          <span>Helpline Broadcast</span>
+        </button>
+      </nav>
+
+      <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div class="flex items-center justify-between">
+          <div class="truncate">
+            <p class="text-xs font-semibold text-white">Super Administrator</p>
+            <p class="text-[11px] text-slate-400">Master Cloud Control</p>
+          </div>
+          <button onclick="logout()" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg" title="Log Out">
+            <i class="ph ph-sign-out text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+      
+      <!-- Header Bar -->
+      <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
+        <div>
+          <h1 id="page-title" class="text-lg font-bold text-slate-900">Dashboard Overview</h1>
+          <p id="page-subtitle" class="text-xs text-slate-500">Live Firebase Synchronization Active</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div id="cloud-sync-status" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Cloud: Connected</span>
+          </div>
+          <button onclick="openAddMerchantModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+            <i class="ph ph-plus-circle text-base"></i>
+            <span>Naya Dukandar Jodein</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Tab Views Container -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+
+        <!-- 1. OVERVIEW TAB -->
+        <div id="tab-overview" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kul Dukandar (Live)</p>
+              <h3 id="stat-total-merchants" class="text-2xl font-extrabold text-slate-900 mt-2">0</h3>
+              <p class="text-xs text-indigo-600 font-medium mt-3" id="stat-active-count">0 Active Dukandar</p>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Blocked / Locked Shops</p>
+              <h3 id="stat-locked-merchants" class="text-2xl font-extrabold text-rose-600 mt-2">0</h3>
+              <p class="text-xs text-slate-400 font-medium mt-3">Access band kiya gaya</p>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Broadcast Helpline</p>
+              <h3 id="stat-helpline-display" class="text-lg font-extrabold text-slate-900 mt-2 font-mono">18001239876</h3>
+              <p class="text-xs text-emerald-600 font-medium mt-3">Shops ke header pe live dikhega</p>
+            </div>
+          </div>
+
+          <!-- Quick List Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-slate-900 text-sm">Realtime Dukandar Database</h3>
+              <button onclick="switchTab('merchants')" class="text-xs text-indigo-600 font-semibold">Sabhi Dekhein</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-medium">
+                  <tr>
+                    <th class="p-3">Dukan Code (5 Digit)</th>
+                    <th class="p-3">Dukan Ka Naam</th>
+                    <th class="p-3">Mobile No.</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 text-right">Lock / Access Toggle</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-merchants-table" class="divide-y divide-slate-100">
+                  <tr><td colspan="5" class="p-4 text-center text-slate-400">Loading shops from Firebase...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. MERCHANTS TAB -->
+        <div id="tab-merchants" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <input type="text" id="merchant-search-input" oninput="filterMerchantsList()" placeholder="Dukan code ya naam se khojein..." 
+              class="w-full pl-4 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm">
+            <button onclick="openAddMerchantModal()" class="px-4 py-2.5 bg-indigo-600 text-white text-xs font-semibold rounded-xl whitespace-nowrap">
+              + Naya Dukandar Add Karein
+            </button>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                  <tr>
+                    <th class="p-4">Dukan Code</th>
+                    <th class="p-4">Dukan & Malik</th>
+                    <th class="p-4">Mobile & UPI</th>
+                    <th class="p-4">B&W / Color Rate</th>
+                    <th class="p-4">Access Status</th>
+                    <th class="p-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="merchants-table-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. TRIAL & PRICING TAB -->
+        <div id="tab-pricing" class="hidden space-y-6">
+          <div class="max-w-xl bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-slate-900">Admin Subscription & Trial Days Settings</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Free Trial Days</label>
+              <input type="number" id="setting-trial-days" value="14" class="w-full p-2.5 border rounded-xl text-sm font-bold text-indigo-700 bg-slate-50">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Monthly Plan Rate (₹)</label>
+              <input type="number" id="setting-monthly-price" value="499" class="w-full p-2.5 border rounded-xl text-sm font-bold text-emerald-700 bg-slate-50">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Admin UPI ID (Subscription lene ke liye)</label>
+              <input type="text" id="setting-admin-upi" value="admindukan@okhdfcbank" class="w-full p-2.5 border rounded-xl text-xs font-mono font-bold bg-slate-50">
+            </div>
+            <button onclick="saveSystemConfig()" class="w-full py-3 bg-indigo-600 text-white font-semibold text-xs rounded-xl shadow">
+              Save & Live Broadcast to All Shops
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. HELPLINE TAB -->
+        <div id="tab-helpline" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-xl">
+            <h3 class="text-base font-bold text-slate-900">Live Support Helpline (Har Dukandar Portal Par Dikhayi Degi)</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Calling Helpline</label>
+              <input type="tel" id="helpline-phone-input" value="18001239876" class="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Helpline</label>
+              <input type="tel" id="helpline-wa-input" value="919800012345" class="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold">
+            </div>
+            <button onclick="saveHelplineSettings()" class="py-3 px-6 bg-amber-600 text-white font-semibold text-xs rounded-xl shadow">
+              Broadcast Helpline Now
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </section>
+
+  <script>
+    let shopsList = [];
+    let systemConfig = {
+      trialDays: 14,
+      monthlyPrice: 499,
+      adminUpi: 'admindukan@okhdfcbank',
+      helplinePhone: '18001239876',
+      helplineWa: '919800012345'
+    };
+
+    // FIRESTORE REALTIME SYNC (Legal Even Paths)
+    function startRealtimeListeners() {
+      if (!window.portalFirebase) return;
+      const { db, collection, doc, onSnapshot } = window.portalFirebase;
+
+      // 1. Listen to all shops: collection 'smartprint_shops'
+      try {
+        const shopsCol = collection(db, 'smartprint_shops');
+        onSnapshot(shopsCol, (snapshot) => {
+          shopsList = [];
+          snapshot.forEach((d) => {
+            shopsList.push({ id: d.id, ...d.data() });
+          });
+          renderAllViews();
+          updateCloudStatus(true);
+        }, (err) => {
+          console.error("Shops listener error:", err);
+          updateCloudStatus(false);
+        });
+      } catch (e) {
+        console.error("Listener init fail:", e);
+      }
+
+      // 2. Listen to system settings: 'smartprint_system' -> 'config'
+      try {
+        const configDoc = doc(db, 'smartprint_system', 'config');
+        onSnapshot(configDoc, (snap) => {
+          if (snap.exists()) {
+            systemConfig = { ...systemConfig, ...snap.data() };
+            document.getElementById('setting-trial-days').value = systemConfig.trialDays || 14;
+            document.getElementById('setting-monthly-price').value = systemConfig.monthlyPrice || 499;
+            document.getElementById('setting-admin-upi').value = systemConfig.adminUpi || 'admindukan@okhdfcbank';
+            document.getElementById('helpline-phone-input').value = systemConfig.helplinePhone || '18001239876';
+            document.getElementById('helpline-wa-input').value = systemConfig.helplineWa || '919800012345';
+            document.getElementById('stat-helpline-display').textContent = systemConfig.helplinePhone || '18001239876';
+          }
+        }, (err) => console.error("Config snap error:", err));
+      } catch (e) {
+        console.error("Config listener init error:", e);
+      }
+    }
+
+    function updateCloudStatus(isOnline) {
+      const el = document.getElementById('cloud-sync-status');
+      if (!el) return;
+      el.className = isOnline 
+        ? "inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-700"
+        : "inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 border border-rose-200 rounded-lg text-[11px] font-bold text-rose-700";
+      el.innerHTML = `<span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse"></span><span>Cloud: ${isOnline ? 'Live Connected' : 'Connection Error'}</span>`;
+    }
+
+    function handleLogin() {
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value;
+      if (u === 'admin@portal.com' && p === 'admin123') {
+        showToast('Login Safal!', 'success');
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        renderAllViews();
+      } else {
+        showToast('Ghalat credentials! Default: admin@portal.com / admin123', 'error');
+      }
+    }
+
+    function logout() {
+      document.getElementById('dashboard-section').classList.add('hidden');
+      document.getElementById('auth-section').classList.remove('hidden');
+    }
+
+    function switchTab(tabKey) {
+      ['overview', 'merchants', 'pricing', 'helpline'].forEach(t => {
+        document.getElementById(`tab-${t}`)?.classList.add('hidden');
+        document.getElementById(`nav-${t}`)?.classList.remove('bg-indigo-600', 'text-white');
+      });
+      document.getElementById(`tab-${tabKey}`)?.classList.remove('hidden');
+      document.getElementById(`nav-${tabKey}`)?.classList.add('bg-indigo-600', 'text-white');
+    }
+
+    function renderAllViews() {
+      document.getElementById('stat-total-merchants').textContent = shopsList.length;
+      document.getElementById('badge-merchants').textContent = shopsList.length;
+      const lockedCount = shopsList.filter(s => s.isLocked).length;
+      document.getElementById('stat-locked-merchants').textContent = lockedCount;
+      document.getElementById('stat-active-count').textContent = `${shopsList.length - lockedCount} Active Dukandar`;
+
+      renderMerchantsTable();
+      renderOverviewTable();
+    }
+
+    function renderOverviewTable() {
+      const tbody = document.getElementById('overview-merchants-table');
+      if (!tbody) return;
+      if (shopsList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Database me koi dukandar nahi hai. Upar "+ Naya Dukandar Jodein" click karein.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = shopsList.slice(0, 6).map(s => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3 font-mono font-bold text-indigo-700">${s.id}</td>
+          <td class="p-3 font-bold text-slate-900">${s.name}</td>
+          <td class="p-3 font-mono text-slate-600">${s.phone}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full ${s.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'} font-bold text-[10px]">
+              ${s.isLocked ? 'LOCKED' : 'ACTIVE'}
+            </span>
+          </td>
+          <td class="p-3 text-right">
+            <button onclick="toggleShopLock('${s.id}')" class="px-2.5 py-1 ${s.isLocked ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'} rounded text-[11px] font-bold">
+              ${s.isLocked ? 'Unlock Karein' : 'Lock Karein'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderMerchantsTable(filtered = null) {
+      const tbody = document.getElementById('merchants-table-body');
+      if (!tbody) return;
+      const list = filtered || shopsList;
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Koi dukandar nahi mila.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(s => `
+        <tr class="hover:bg-slate-50 transition border-b ${s.isLocked ? 'bg-rose-50/40' : ''}">
+          <td class="p-4 font-mono font-black text-indigo-700 text-sm">${s.id}</td>
+          <td class="p-4 font-bold text-slate-900">${s.name}</td>
+          <td class="p-4 font-mono text-xs text-slate-600">${s.phone}<div class="text-[11px] text-slate-400 font-mono">${s.upiId || 'No UPI'}</div></td>
+          <td class="p-4 text-xs font-semibold">B&W: ₹${s.rates?.bw || 2} | Col: ₹${s.rates?.color || 10}</td>
+          <td class="p-4">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${s.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+              ${s.isLocked ? 'LOCKED' : 'ACTIVE'}
+            </span>
+          </td>
+          <td class="p-4 text-right space-x-2">
+            <button onclick="toggleShopLock('${s.id}')" class="px-3 py-1.5 rounded-lg ${s.isLocked ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'} text-xs font-bold shadow-sm">
+              ${s.isLocked ? 'Unlock Karein' : 'Lock Karein'}
+            </button>
+            <button onclick="deleteShop('${s.id}')" class="px-2 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-rose-100 hover:text-rose-700 text-xs">
+              <i class="ph ph-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function toggleShopLock(shopId) {
+      const shop = shopsList.find(s => s.id === shopId);
+      if (!shop || !window.portalFirebase) return;
+      const { db, doc, setDoc } = window.portalFirebase;
+
+      try {
+        const newLockStatus = !shop.isLocked;
+        await setDoc(doc(db, 'smartprint_shops', shopId), {
+          isLocked: newLockStatus,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        showToast(`Dukan #${shopId} ${newLockStatus ? 'LOCKED' : 'UNLOCKED'}!`, newLockStatus ? 'error' : 'success');
+      } catch (e) {
+        console.error("Lock error:", e);
+        showToast("Error updating shop lock!", 'error');
+      }
+    }
+
+    async function deleteShop(shopId) {
+      if (!confirm(`Kya aap sachme Shop #${shopId} ko delete karna chahte hain?`)) return;
+      const { db, doc, deleteDoc } = window.portalFirebase;
+      try {
+        await deleteDoc(doc(db, 'smartprint_shops', shopId));
+        showToast(`Shop #${shopId} deleted!`, 'info');
+      } catch (e) {
+        showToast("Delete failed", 'error');
+      }
+    }
+
+    function filterMerchantsList() {
+      const q = (document.getElementById('merchant-search-input')?.value || '').toLowerCase();
+      renderMerchantsTable(shopsList.filter(s => s.name?.toLowerCase().includes(q) || s.id.includes(q) || s.phone?.includes(q)));
+    }
+
+    async function openAddMerchantModal() {
+      const name = prompt("Dukan Ka Naam Dalein:");
+      if (!name) return;
+      const phone = prompt("Dukandar Ka 10-Digit Mobile No:");
+      if (!phone || phone.length < 10) {
+        alert("Kripya 10-digit mobile number dalein!");
+        return;
+      }
+      
+      let customCode = prompt("5-Digit Dukan Number Dalein (Khali chhodne par random banega):");
+      if (!customCode || customCode.length !== 5) {
+        customCode = Math.floor(10000 + Math.random() * 90000).toString();
+      }
+
+      const { db, doc, setDoc } = window.portalFirebase;
+      try {
+        await setDoc(doc(db, 'smartprint_shops', customCode), {
+          id: customCode,
+          name: name,
+          phone: phone,
+          upiId: `${phone}@upi`,
+          rates: { bw: 2, color: 10 },
+          isLocked: false,
+          subscription: {
+            status: 'ACTIVE',
+            plan: 'Trial',
+            expiry: Date.now() + (systemConfig.trialDays * 86400000)
+          },
+          createdAt: new Date().toISOString()
+        });
+        showToast(`Dukandar #${customCode} safalta se add ho gaya!`, 'success');
+      } catch (e) {
+        console.error("Add shop error:", e);
+        showToast("Firebase add error: " + e.message, 'error');
+      }
+    }
+
+    async function saveSystemConfig() {
+      const days = parseInt(document.getElementById('setting-trial-days').value, 10) || 14;
+      const price = parseInt(document.getElementById('setting-monthly-price').value, 10) || 499;
+      const upi = document.getElementById('setting-admin-upi').value.trim();
+
+      const { db, doc, setDoc } = window.portalFirebase;
+      try {
+        await setDoc(doc(db, 'smartprint_system', 'config'), {
+          trialDays: days,
+          monthlyPrice: price,
+          adminUpi: upi,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        showToast('Settings live broadcast ho gayi!', 'success');
+      } catch (e) {
+        showToast('Save error: ' + e.message, 'error');
+      }
+    }
+
+    async function saveHelplineSettings() {
+      const phone = document.getElementById('helpline-phone-input').value.trim();
+      const wa = document.getElementById('helpline-wa-input').value.trim();
+
+      const { db, doc, setDoc } = window.portalFirebase;
+      try {
+        await setDoc(doc(db, 'smartprint_system', 'config'), {
+          helplinePhone: phone,
+          helplineWa: wa,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        showToast('Helpline live broadcast ho gayi!', 'success');
+      } catch (e) {
+        showToast('Broadcast error: ' + e.message, 'error');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold ${type === 'error' ? 'bg-rose-700 text-white' : (type === 'success' ? 'bg-emerald-700 text-white' : 'bg-slate-900 text-white')}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3200);
+    }
+  </script>
+</body>
+</html>
