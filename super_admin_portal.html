@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="hi" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal - Dashboard & Billing</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+
+  <!-- Firebase Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+      apiKey: "AIzaSyA8JTuMKKJiQLR6IDwv8Z7NdfuPZgWo9jM",
+      authDomain: "adarsh-seva-tech.firebaseapp.com",
+      databaseURL: "https://adarsh-seva-tech-default-rtdb.firebaseio.com",
+      projectId: "adarsh-seva-tech",
+      storageBucket: "adarsh-seva-tech.firebasestorage.app",
+      messagingSenderId: "260918056735",
+      appId: "1:260918056735:web:5d37617baa0675f9eb822a"
+    };
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'adarsh-seva-tech';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.portalFirebase = {
+      app,
+      auth,
+      db,
+      appId,
+      doc,
+      setDoc,
+      getDoc,
+      getDocs,
+      collection,
+      onSnapshot,
+      signInAnonymously,
+      signInWithCustomToken
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof window.initFirebaseIntegration === 'function') {
+        window.initFirebaseIntegration();
+      }
+    });
+  </script>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Modal / Dialogs Layer -->
+  <div id="modal-container" class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"></div>
+
+  <!-- AUTH SECTION (Login & Forgot Password) -->
+  <section id="auth-section" class="min-h-full flex items-center justify-center p-4 sm:p-6 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transition-all duration-300">
+      
+      <!-- Top Branding Header -->
+      <div class="p-8 text-center bg-gradient-to-b from-indigo-50 to-white border-b border-slate-100">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 mb-4">
+          <i class="ph ph-shield-check text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Super Admin Portal</h1>
+        <p class="text-sm text-slate-500 mt-1">Dukandar, Users & Billing Management System</p>
+      </div>
+
+      <!-- Login Form View -->
+      <div id="login-view" class="p-8 space-y-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Admin Email / Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="ph ph-user-circle text-lg"></i>
+            </span>
+            <input type="text" id="login-username" value="admin@portal.com" 
+              class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="admin@portal.com">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider">Admin Password</label>
+            <button type="button" onclick="showForgotPassword()" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold focus:outline-none hover:underline">
+              Forgot Password?
+            </button>
+          </div>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="ph ph-lock-key text-lg"></i>
+            </span>
+            <input type="password" id="login-password" value="admin123" 
+              class="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="Enter password">
+            <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+              <i class="ph ph-eye text-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
+          <i class="ph ph-info text-base text-amber-600 mt-0.5 shrink-0"></i>
+          <span>Default credentials: <strong>admin@portal.com</strong> / password: <strong>admin123</strong></span>
+        </div>
+
+        <button onclick="handleLogin()" class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 active:scale-[0.99] transition flex items-center justify-center gap-2">
+          <span>Login to Admin Portal</span>
+          <i class="ph ph-arrow-right text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Forgot Password View -->
+      <div id="forgot-view" class="p-8 space-y-5 hidden">
+        <div class="text-center">
+          <h2 class="text-lg font-bold text-slate-900">Reset Your Password</h2>
+          <p class="text-xs text-slate-500 mt-1">Apna registered admin email address enter karein security OTP / reset link ke liye.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Registered Admin Email</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="ph ph-envelope-simple text-lg"></i>
+            </span>
+            <input type="email" id="reset-email" value="admin@portal.com" 
+              class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition" placeholder="admin@portal.com">
+          </div>
+        </div>
+
+        <div id="otp-section" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Enter Verification Code</label>
+            <input type="text" id="reset-otp" placeholder="Enter 6-digit OTP (Try: 123456)" 
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">New Admin Password</label>
+            <input type="password" id="reset-new-password" placeholder="Enter new strong password" 
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition">
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <button id="send-otp-btn" onclick="handleSendOTP()" class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition">
+            Send Reset OTP
+          </button>
+          <button id="confirm-reset-btn" onclick="handleConfirmReset()" class="hidden w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/30 transition">
+            Update Password & Login
+          </button>
+          <button onclick="showLoginView()" class="w-full py-2.5 px-4 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
+            Back to Login
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MAIN ADMIN DASHBOARD SECTION -->
+  <section id="dashboard-section" class="hidden flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-slate-100">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
+      <div class="p-5 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+            AP
+          </div>
+          <div>
+            <h2 class="font-bold text-white text-base leading-tight">Admin Portal</h2>
+            <span class="text-xs text-emerald-400 font-medium flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online
+            </span>
+          </div>
+        </div>
+        <button onclick="logout()" title="Logout" class="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition md:hidden">
+          <i class="ph ph-sign-out text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+        <button onclick="switchTab('overview')" id="nav-overview" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition bg-indigo-600 text-white">
+          <i class="ph ph-gauge text-xl"></i>
+          <span>Overview Dashboard</span>
+        </button>
+        <button onclick="switchTab('merchants')" id="nav-merchants" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-storefront text-xl"></i>
+          <span>Dukandar (Merchants)</span>
+          <span id="badge-merchants" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold">0</span>
+        </button>
+        <button onclick="switchTab('users')" id="nav-users" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-users-three text-xl"></i>
+          <span>Customer Users</span>
+          <span id="badge-users" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-bold">0</span>
+        </button>
+        <button onclick="switchTab('pricing')" id="nav-pricing" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-tag-chevron text-xl"></i>
+          <span>Trial & Plans Settings</span>
+        </button>
+        <button onclick="switchTab('gateway')" id="nav-gateway" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-credit-card text-xl"></i>
+          <span>Cashfree & Direct UPI</span>
+        </button>
+        <button onclick="switchTab('helpline')" id="nav-helpline" class="nav-item w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+          <i class="ph ph-headset text-xl"></i>
+          <span>Helpline & Support</span>
+          <span class="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">24x7</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Support Quick Pill -->
+      <div class="px-3 pb-2">
+        <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-[11px] font-semibold flex items-center gap-1">
+              <i class="ph ph-phone-call text-amber-400"></i> Active Helpline
+            </span>
+            <span class="text-[10px] text-emerald-400 font-bold">Live</span>
+          </div>
+          <p class="font-bold text-white font-mono text-xs" id="sidebar-helpline-display">+91 98000 12345</p>
+          <div class="mt-2 flex gap-1.5">
+            <a id="sidebar-call-btn" href="tel:+919800012345" class="flex-1 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] text-center font-semibold transition">Call</a>
+            <a id="sidebar-wa-btn" href="https://wa.me/919800012345" target="_blank" class="flex-1 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] text-center font-semibold transition">WhatsApp</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-white">AD</div>
+            <div class="truncate">
+              <p class="text-xs font-semibold text-white truncate" id="sidebar-admin-name">Super Administrator</p>
+              <p class="text-[11px] text-slate-400">Admin Control</p>
+            </div>
+          </div>
+          <button onclick="logout()" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Log Out">
+            <i class="ph ph-sign-out text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+      
+      <!-- Header Bar -->
+      <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0">
+        <div>
+          <h1 id="page-title" class="text-lg font-bold text-slate-900">Dashboard Overview</h1>
+          <p id="page-subtitle" class="text-xs text-slate-500">Live platform statistics aur Dukandar metrics</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Live Cloud Sync Pill -->
+          <div id="cloud-sync-status" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Cloud Sync: Connected</span>
+          </div>
+          <button onclick="triggerQuickAddMerchant()" class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition">
+            <i class="ph ph-plus-circle text-base"></i>
+            <span>Naya Dukandar Add Karein</span>
+          </button>
+          <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+          <a id="header-helpline-btn" href="tel:+919800012345" title="Call Helpline" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition">
+            <i class="ph ph-phone-call text-base text-amber-600"></i>
+            <span id="header-helpline-text">Helpline: +91 98000 12345</span>
+          </a>
+          <button onclick="syncAllData()" title="Refresh Data" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            <i class="ph ph-arrows-clockwise text-xl"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Tab Views Container -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+
+        <!-- 1. OVERVIEW TAB -->
+        <div id="tab-overview" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-indigo-300 transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kul Dukandar (Merchants)</p>
+                  <h3 id="stat-total-merchants" class="text-2xl font-extrabold text-slate-900 mt-2">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  <i class="ph ph-storefront"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center text-xs text-emerald-600 font-medium gap-1">
+                <i class="ph ph-trend-up"></i>
+                <span id="stat-active-trials">0 on Free Trial</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Dukan Ke Users (Customers)</p>
+                  <h3 id="stat-total-users" class="text-2xl font-extrabold text-slate-900 mt-2">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  <i class="ph ph-users-three"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center text-xs text-slate-500 font-medium gap-1">
+                <i class="ph ph-check-circle text-emerald-500"></i>
+                <span>Active customers connected</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-amber-300 transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kul Kamai (Total Earnings)</p>
+                  <h3 id="stat-total-earnings" class="text-2xl font-extrabold text-slate-900 mt-2">₹0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  <i class="ph ph-currency-inr"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center text-xs text-amber-600 font-medium gap-1">
+                <i class="ph ph-wallet"></i>
+                <span>Cashfree & Direct UPI</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-purple-300 transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Active Paid Plans</p>
+                  <h3 id="stat-active-plans" class="text-2xl font-extrabold text-slate-900 mt-2">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  <i class="ph ph-credit-card"></i>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center text-xs text-purple-600 font-medium gap-1">
+                <i class="ph ph-clock-countdown"></i>
+                <span id="stat-trial-duration-badge">Trial: 14 Din</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-sm">Haliye Dukandar Aur Status</h3>
+                  <p class="text-xs text-slate-500">Live subscription aur trial ki jaankaari</p>
+                </div>
+                <button onclick="switchTab('merchants')" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View All</button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-500 font-medium">
+                    <tr>
+                      <th class="p-3 rounded-l-lg">Dukandar Ka Naam</th>
+                      <th class="p-3">Dukan Code</th>
+                      <th class="p-3">Status</th>
+                      <th class="p-3">Users</th>
+                      <th class="p-3 rounded-r-lg">Kamai (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-merchants-table" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="font-bold text-slate-900 text-sm">Active UPI QR Code</h3>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Auto-Gen</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Dukandar subscription lene ke liye UPI scanner</p>
+
+                <div class="bg-slate-50 p-4 rounded-xl flex flex-col items-center justify-center border border-slate-200/60">
+                  <div id="quick-qr-code" class="p-2 bg-white rounded-xl shadow-sm border border-slate-200"></div>
+                  <p class="text-xs font-bold text-slate-800 mt-3" id="quick-vpa-display">merchant@upi</p>
+                  <p class="text-[11px] text-slate-500" id="quick-amount-display">Monthly Subscription: ₹499</p>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+                <button onclick="switchTab('gateway')" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5">
+                  <i class="ph ph-gear"></i>
+                  <span>Change UPI Settings</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. MERCHANTS (DUKANDAR) TAB -->
+        <div id="tab-merchants" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="relative flex-1">
+              <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="merchant-search-input" oninput="filterMerchantsList()" placeholder="Dukan naam, mobile, dukan number, email ya malik ka naam khojein..." 
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600">
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="merchant-filter-status" onchange="filterMerchantsList()" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
+                <option value="ALL">Sabhi Status</option>
+                <option value="TRIAL">Free Trial Wale</option>
+                <option value="ACTIVE">Paid Subscription</option>
+                <option value="EXPIRED">Plan Expired</option>
+                <option value="LOCKED">Locked / Blocked</option>
+              </select>
+              <button onclick="openAddMerchantModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition whitespace-nowrap">
+                <i class="ph ph-plus font-bold"></i> Add Dukandar
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4">Dukan & Malik (Owner)</th>
+                    <th class="p-4">Dukan Code & Mobile</th>
+                    <th class="p-4">Gmail ID</th>
+                    <th class="p-4">Access Status</th>
+                    <th class="p-4">Plan & Expiry</th>
+                    <th class="p-4">Users & Kamai</th>
+                    <th class="p-4 text-right">Lock / Unlock & Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="merchants-table-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. USERS TAB -->
+        <div id="tab-users" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="relative flex-1">
+              <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="user-search-input" oninput="filterUsersList()" placeholder="User ka naam, mobile ya Dukandar filter karein..." 
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600">
+            </div>
+            <button onclick="openAddUserModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition whitespace-nowrap">
+              <i class="ph ph-user-plus font-bold"></i> Naya User Jodein
+            </button>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th class="p-4">Customer Ka Naam</th>
+                    <th class="p-4">Mobile Number</th>
+                    <th class="p-4">Juda Hua Dukandar</th>
+                    <th class="p-4">Kareedari (Orders)</th>
+                    <th class="p-4">Registration Date</th>
+                    <th class="p-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. TRIAL & SUBSCRIPTION PRICING TAB -->
+        <div id="tab-pricing" class="hidden space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                    <i class="ph ph-hourglass-high"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-slate-900">Dukandaron Ke Liye Free Trial Setting</h3>
+                    <p class="text-xs text-slate-500">Naye register hone wale dukandaron ke free din set karein</p>
+                  </div>
+                </div>
+
+                <div class="mt-6 space-y-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Free Trial Duration (Days)</label>
+                    <div class="flex items-center gap-3">
+                      <input type="number" id="setting-trial-days" min="1" max="90" value="14" 
+                        class="w-32 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <span class="text-sm font-medium text-slate-500">Din tak bilkul free</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button onclick="saveTrialSettings()" class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-md transition">
+                Save Free Trial Days
+              </button>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <i class="ph ph-money"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-slate-900">Monthly Subscription Price</h3>
+                    <p class="text-xs text-slate-500">Dukandar ka mahina shulk</p>
+                  </div>
+                </div>
+
+                <div class="mt-6 space-y-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Monthly Plan Rate (INR ₹)</label>
+                    <div class="relative">
+                      <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 font-bold">₹</span>
+                      <input type="number" id="setting-monthly-price" min="0" value="499" 
+                        class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">3 Months Bundle (INR ₹)</label>
+                    <div class="relative">
+                      <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 font-bold">₹</span>
+                      <input type="number" id="setting-quarterly-price" min="0" value="1299" 
+                        class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button onclick="savePricingSettings()" class="mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-md transition">
+                Save Subscription Prices
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. GATEWAY & UPI TAB -->
+        <div id="tab-gateway" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl font-bold">
+                    <i class="ph ph-credit-card"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-slate-900">Cashfree Payments Setup</h3>
+                    <p class="text-xs text-slate-500">Official PG Integration Keys</p>
+                  </div>
+                </div>
+                <input type="checkbox" id="cashfree-active-toggle" checked class="w-5 h-5 accent-orange-600 cursor-pointer" onchange="toggleCashfreeActive()">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Environment Mode</label>
+                <select id="cashfree-env" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+                  <option value="TEST">Sandbox / Test Mode</option>
+                  <option value="PROD">Live Production Mode</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Cashfree App ID</label>
+                <input type="text" id="cashfree-app-id" value="TEST_CF_938472918471" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Cashfree Secret Key</label>
+                <input type="password" id="cashfree-secret" value="cf_sec_99382173491823901" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              </div>
+
+              <button onclick="saveCashfreeSettings()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition">
+                Save Cashfree Credentials
+              </button>
+            </div>
+
+            <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center text-2xl">
+                    <i class="ph ph-qr-code"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-slate-900">Direct UPI & Dynamic Scanner</h3>
+                    <p class="text-xs text-slate-500">Admin UPI ID jisse dukandar subscription dega</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Admin UPI ID (VPA)</label>
+                  <input type="text" id="upi-vpa-input" oninput="regenerateUPICode()" value="admindukan@okhdfcbank" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Payee Name</label>
+                    <input type="text" id="upi-name-input" oninput="regenerateUPICode()" value="Admin Portal Billing" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Default Amount (INR)</label>
+                    <input type="number" id="upi-amt-input" oninput="regenerateUPICode()" value="499" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-5">
+                <div id="full-qr-code" class="p-2 bg-white rounded-xl shadow-sm border border-slate-200 shrink-0"></div>
+                <div>
+                  <h4 class="font-bold text-slate-900 text-sm" id="qr-payee-display">Admin Portal Billing</h4>
+                  <p class="text-xs font-mono font-semibold text-slate-600" id="qr-vpa-display">admindukan@okhdfcbank</p>
+                  <p class="text-xs text-emerald-600 font-bold" id="qr-amt-display">Pay: ₹499.00</p>
+                </div>
+              </div>
+
+              <button onclick="downloadQRCode()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl">
+                Download QR Scanner
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. HELPLINE TAB -->
+        <div id="tab-helpline" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 max-w-2xl">
+            <h3 class="text-base font-bold text-slate-900">Helpline Settings (Dukandar Portal Live Reflected)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Calling Helpline *</label>
+                <input type="tel" id="helpline-phone-input" value="18001239876" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Helpline *</label>
+                <input type="tel" id="helpline-wa-input" value="919876543210" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Support Email</label>
+              <input type="email" id="helpline-email-input" value="support@dukandarportal.in" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Message</label>
+              <textarea id="helpline-message-input" rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">Dukandar account lock ya renewal issue hone par turant sampark karein.</textarea>
+            </div>
+            <button onclick="saveHelplineSettings()" class="py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow transition">
+              Save & Live Broadcast to All Shops
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </section>
+
+  <!-- APP JAVASCRIPT LOGIC -->
+  <script>
+    let appData = {
+      adminAuth: {
+        username: 'admin@portal.com',
+        password: 'admin123',
+        tempOtp: null
+      },
+      settings: {
+        trialDays: 14,
+        monthlyPrice: 499,
+        quarterlyPrice: 1299,
+        cashfree: {
+          enabled: true,
+          env: 'TEST',
+          appId: 'TEST_CF_938472918471',
+          secret: 'cf_sec_99382173491823901'
+        },
+        upi: {
+          vpa: 'admindukan@okhdfcbank',
+          name: 'Admin Portal Billing',
+          amount: 499
+        },
+        helpline: {
+          phone: '18001239876',
+          whatsapp: '919876543210',
+          email: 'support@dukandarportal.in',
+          timings: '24x7 Customer Support',
+          message: 'Dukandar account lock hone par sampark karein.'
+        }
+      },
+      merchants: [
+        {
+          id: '84920',
+          name: 'राजेश किराना & प्रिंटिंग स्टोर',
+          shopNumber: 'SHOP-B/104',
+          owner: 'Ramesh Gupta',
+          phone: '9876543210',
+          email: 'rajesh.store@gmail.com',
+          city: 'Patna, Gandhi Maidan Road',
+          category: 'Grocery',
+          status: 'ACTIVE',
+          isLocked: false,
+          joinedDate: '2026-09-10',
+          expiryDate: '2026-12-10',
+          usersCount: 142,
+          totalEarned: 499
+        }
+      ],
+      users: [
+        { id: 'USR-201', name: 'अमित वर्मा', phone: '9123456701', merchantId: '84920', merchantName: 'राजेश किराना & प्रिंटिंग स्टोर', orders: 18, date: '2026-09-12' }
+      ]
+    };
+
+    async function initFirebaseIntegration() {
+      if (!window.portalFirebase) return;
+      const { auth, signInWithCustomToken, signInAnonymously, db, appId, doc, onSnapshot, setDoc } = window.portalFirebase;
+
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        updateCloudPill(true, 'Live Connected');
+
+        // Path: /artifacts/{appId}/public/data/admin_sync
+        const syncDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'admin_sync');
+
+        onSnapshot(syncDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const remoteData = docSnap.data();
+            if (remoteData) {
+              if (remoteData.settings) appData.settings = remoteData.settings;
+              if (remoteData.merchants && Array.isArray(remoteData.merchants)) appData.merchants = remoteData.merchants;
+              if (remoteData.users && Array.isArray(remoteData.users)) appData.users = remoteData.users;
+              renderAllViews();
+            }
+          } else {
+            pushToFirestore();
+          }
+        }, (error) => {
+          console.error("Firestore sync error:", error);
+          updateCloudPill(false, 'Offline (Local Sync)');
+        });
+
+      } catch (err) {
+        console.error("Firebase auth/connect error:", err);
+        updateCloudPill(false, 'Offline fallback');
+      }
+    }
+
+    async function pushToFirestore() {
+      if (!window.portalFirebase) return;
+      const { db, appId, doc, setDoc } = window.portalFirebase;
+
+      try {
+        const syncDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'admin_sync');
+        await setDoc(syncDocRef, {
+          merchants: appData.merchants,
+          users: appData.users,
+          settings: appData.settings,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        updateCloudPill(true, 'Live Connected');
+      } catch (e) {
+        console.error("Firestore push error:", e);
+      }
+    }
+
+    function updateCloudPill(isConnected, text) {
+      const pill = document.getElementById('cloud-sync-status');
+      if (!pill) return;
+      if (isConnected) {
+        pill.className = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-700";
+        pill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>Firebase: ${text}</span>`;
+      } else {
+        pill.className = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-700";
+        pill.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Firebase: ${text}</span>`;
+      }
+    }
+
+    function handleLogin() {
+      const userField = document.getElementById('login-username').value.trim();
+      const passField = document.getElementById('login-password').value;
+
+      if (userField === appData.adminAuth.username && passField === appData.adminAuth.password) {
+        showToast('Login Safal! Swagatam Admin.', 'success');
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        renderAllViews();
+        setTimeout(regenerateUPICode, 150);
+      } else {
+        showToast('Ghalat credentials! Default login: admin@portal.com / admin123', 'error');
+      }
+    }
+
+    function logout() {
+      document.getElementById('dashboard-section').classList.add('hidden');
+      document.getElementById('auth-section').classList.remove('hidden');
+      showToast('Aap safaltapoorvak logout ho gaye.', 'info');
+    }
+
+    function showForgotPassword() {
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('forgot-view').classList.remove('hidden');
+    }
+
+    function showLoginView() {
+      document.getElementById('forgot-view').classList.add('hidden');
+      document.getElementById('login-view').classList.remove('hidden');
+    }
+
+    function handleSendOTP() {
+      document.getElementById('otp-section').classList.remove('hidden');
+      document.getElementById('send-otp-btn').classList.add('hidden');
+      document.getElementById('confirm-reset-btn').classList.remove('hidden');
+      showToast('Demo OTP 123456 bhej diya gaya hai!', 'info');
+    }
+
+    function handleConfirmReset() {
+      const otp = document.getElementById('reset-otp').value.trim();
+      const newPass = document.getElementById('reset-new-password').value.trim();
+      if (otp !== '123456') {
+        showToast('OTP invalid hai! Try: 123456', 'error');
+        return;
+      }
+      appData.adminAuth.password = newPass;
+      showToast('Password reset ho gaya!', 'success');
+      document.getElementById('login-password').value = newPass;
+      showLoginView();
+    }
+
+    function togglePasswordVisibility(fieldId, btnElement) {
+      const input = document.getElementById(fieldId);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function switchTab(tabKey) {
+      const tabs = ['overview', 'merchants', 'users', 'pricing', 'gateway', 'helpline'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        const navEl = document.getElementById(`nav-${t}`);
+        if (el) el.classList.add('hidden');
+        if (navEl) navEl.classList.remove('bg-indigo-600', 'text-white');
+      });
+
+      const targetTab = document.getElementById(`tab-${tabKey}`);
+      const targetNav = document.getElementById(`nav-${tabKey}`);
+      if (targetTab) targetTab.classList.remove('hidden');
+      if (targetNav) targetNav.classList.add('bg-indigo-600', 'text-white');
+
+      if (tabKey === 'gateway' || tabKey === 'overview') {
+        setTimeout(regenerateUPICode, 100);
+      }
+    }
+
+    function renderAllViews() {
+      const totalMerchants = appData.merchants.length;
+      const totalUsers = appData.merchants.reduce((sum, m) => sum + (Number(m.usersCount) || 0), 0);
+      const totalEarnings = appData.merchants.reduce((sum, m) => sum + (Number(m.totalEarned) || 0), 0);
+      const trialCount = appData.merchants.filter(m => m.status === 'TRIAL').length;
+      const activePaidCount = appData.merchants.filter(m => m.status === 'ACTIVE').length;
+
+      document.getElementById('stat-total-merchants').textContent = totalMerchants;
+      document.getElementById('stat-total-users').textContent = totalUsers.toLocaleString('en-IN');
+      document.getElementById('stat-total-earnings').textContent = `₹${totalEarnings.toLocaleString('en-IN')}`;
+      document.getElementById('stat-active-plans').textContent = activePaidCount;
+      document.getElementById('stat-active-trials').textContent = `${trialCount} dukandar on Free Trial`;
+      document.getElementById('badge-merchants').textContent = totalMerchants;
+      document.getElementById('badge-users').textContent = totalUsers;
+
+      document.getElementById('setting-trial-days').value = appData.settings.trialDays;
+      document.getElementById('setting-monthly-price').value = appData.settings.monthlyPrice;
+      document.getElementById('setting-quarterly-price').value = appData.settings.quarterlyPrice;
+
+      syncHelplineUI();
+      renderMerchantsTable();
+      renderUsersTable();
+      renderOverviewRecentTable();
+    }
+
+    function syncHelplineUI() {
+      const h = appData.settings.helpline;
+      document.getElementById('helpline-phone-input').value = h.phone;
+      document.getElementById('helpline-wa-input').value = h.whatsapp;
+      document.getElementById('helpline-email-input').value = h.email;
+      document.getElementById('helpline-message-input').value = h.message;
+      document.getElementById('sidebar-helpline-display').textContent = h.phone;
+      document.getElementById('header-helpline-text').textContent = `Helpline: ${h.phone}`;
+    }
+
+    function renderOverviewRecentTable() {
+      const tbody = document.getElementById('overview-merchants-table');
+      if (!tbody) return;
+      tbody.innerHTML = appData.merchants.slice(0, 5).map(m => `
+        <tr class="hover:bg-slate-50/70 transition">
+          <td class="p-3">
+            <div class="font-bold text-slate-900">${m.name}</div>
+            <div class="text-[11px] text-slate-500">${m.owner}</div>
+          </td>
+          <td class="p-3 font-mono font-bold text-indigo-700">${m.id}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full ${m.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'} font-bold text-[10px]">
+              ${m.isLocked ? 'LOCKED' : m.status}
+            </span>
+          </td>
+          <td class="p-3">${m.usersCount}</td>
+          <td class="p-3 font-bold text-slate-900">₹${m.totalEarned}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderMerchantsTable(filteredList = null) {
+      const tbody = document.getElementById('merchants-table-body');
+      if (!tbody) return;
+      const list = filteredList || appData.merchants;
+
+      tbody.innerHTML = list.map(m => `
+        <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${m.isLocked ? 'bg-rose-50/30' : ''}">
+          <td class="p-4">
+            <div class="font-bold text-slate-900">${m.name}</div>
+            <div class="text-[11px] text-slate-500">${m.owner}</div>
+          </td>
+          <td class="p-4 font-mono font-bold text-indigo-700">${m.id}<div class="text-slate-500 text-xs">${m.phone}</div></td>
+          <td class="p-4">${m.email}</td>
+          <td class="p-4">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${m.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+              ${m.isLocked ? '🔒 LOCKED' : '🔓 UNLOCKED'}
+            </span>
+          </td>
+          <td class="p-4">${m.status}<div class="text-[11px] text-slate-400">Exp: ${m.expiryDate}</div></td>
+          <td class="p-4 font-bold text-slate-900">${m.usersCount} users</td>
+          <td class="p-4 text-right">
+            <button onclick="toggleMerchantLock('${m.id}')" class="px-3 py-1.5 rounded-lg ${m.isLocked ? 'bg-rose-600 text-white' : 'bg-slate-200 text-slate-800'} text-xs font-bold transition">
+              ${m.isLocked ? 'Unlock Dukan' : 'Lock Dukan'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderUsersTable() {
+      const tbody = document.getElementById('users-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = appData.users.map(u => `
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+          <td class="p-4 font-bold text-slate-900">${u.name}</td>
+          <td class="p-4 font-mono text-slate-700">${u.phone}</td>
+          <td class="p-4 text-indigo-600 font-semibold">${u.merchantName} (${u.merchantId})</td>
+          <td class="p-4 font-bold text-slate-800">${u.orders} Orders</td>
+          <td class="p-4 text-slate-400 font-mono">${u.date}</td>
+          <td class="p-4 text-right">
+            <button onclick="deleteUser('${u.id}')" class="text-rose-600 p-1"><i class="ph ph-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleMerchantLock(merchantId) {
+      const merchant = appData.merchants.find(m => m.id === merchantId);
+      if (!merchant) return;
+      merchant.isLocked = !merchant.isLocked;
+      renderAllViews();
+      pushToFirestore();
+      showToast(`${merchant.name} ${merchant.isLocked ? 'LOCKED' : 'UNLOCKED'}! Live sync executed.`, merchant.isLocked ? 'warning' : 'success');
+    }
+
+    function filterMerchantsList() {
+      const query = (document.getElementById('merchant-search-input')?.value || '').toLowerCase().trim();
+      const status = document.getElementById('merchant-filter-status')?.value || 'ALL';
+      const filtered = appData.merchants.filter(m => {
+        const match = m.name.toLowerCase().includes(query) || m.phone.includes(query) || m.id.includes(query);
+        const matchStatus = status === 'ALL' || (status === 'LOCKED' ? m.isLocked : m.status === status);
+        return match && matchStatus;
+      });
+      renderMerchantsTable(filtered);
+    }
+
+    function filterUsersList() {
+      const query = (document.getElementById('user-search-input')?.value || '').toLowerCase().trim();
+      renderUsersTable();
+    }
+
+    function triggerQuickAddMerchant() {
+      switchTab('merchants');
+      openAddMerchantModal();
+    }
+
+    function openAddMerchantModal() {
+      const code = Math.floor(10000 + Math.random() * 90000).toString();
+      const name = prompt("Dukan Ka Naam:");
+      const phone = prompt("Dukandar Mobile Number:");
+      if (!name || !phone) return;
+
+      appData.merchants.unshift({
+        id: code,
+        name: name,
+        shopNumber: `SHOP-${code}`,
+        owner: 'Owner',
+        phone: phone,
+        email: `${phone}@gmail.com`,
+        city: 'Bihar',
+        category: 'Printing',
+        status: 'TRIAL',
+        isLocked: false,
+        joinedDate: new Date().toISOString().split('T')[0],
+        expiryDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+        usersCount: 0,
+        totalEarned: 0
+      });
+      renderAllViews();
+      pushToFirestore();
+      showToast(`Dukandar #${code} register ho gaya!`, 'success');
+    }
+
+    function openAddUserModal() {
+      const name = prompt("User Name:");
+      const phone = prompt("User Mobile:");
+      if (!name || !phone) return;
+      appData.users.unshift({
+        id: 'USR-' + Date.now().toString().slice(-4),
+        name: name,
+        phone: phone,
+        merchantId: appData.merchants[0]?.id || '84920',
+        merchantName: appData.merchants[0]?.name || 'Printing Shop',
+        orders: 1,
+        date: new Date().toISOString().split('T')[0]
+      });
+      renderAllViews();
+      pushToFirestore();
+    }
+
+    function deleteUser(uid) {
+      appData.users = appData.users.filter(u => u.id !== uid);
+      renderAllViews();
+      pushToFirestore();
+    }
+
+    function saveTrialSettings() {
+      const days = parseInt(document.getElementById('setting-trial-days').value, 10) || 14;
+      appData.settings.trialDays = days;
+      pushToFirestore();
+      showToast(`Trial days set to ${days}!`, 'success');
+    }
+
+    function savePricingSettings() {
+      const monthly = parseInt(document.getElementById('setting-monthly-price').value, 10) || 499;
+      appData.settings.monthlyPrice = monthly;
+      appData.settings.upi.amount = monthly;
+      regenerateUPICode();
+      pushToFirestore();
+      showToast('Subscription rates updated!', 'success');
+    }
+
+    function saveHelplineSettings() {
+      const phone = document.getElementById('helpline-phone-input').value.trim();
+      const whatsapp = document.getElementById('helpline-wa-input').value.trim();
+      const email = document.getElementById('helpline-email-input').value.trim();
+      const message = document.getElementById('helpline-message-input').value.trim();
+
+      appData.settings.helpline = { phone, whatsapp, email, timings: '24x7 Customer Support', message };
+      syncHelplineUI();
+      pushToFirestore();
+      showToast('Helpline live broadcast ho gayi!', 'success');
+    }
+
+    function toggleCashfreeActive() {
+      appData.settings.cashfree.enabled = document.getElementById('cashfree-active-toggle').checked;
+      pushToFirestore();
+    }
+
+    function saveCashfreeSettings() {
+      appData.settings.cashfree.appId = document.getElementById('cashfree-app-id').value;
+      appData.settings.cashfree.secret = document.getElementById('cashfree-secret').value;
+      appData.settings.cashfree.env = document.getElementById('cashfree-env').value;
+      pushToFirestore();
+      showToast('Cashfree settings saved!', 'success');
+    }
+
+    function regenerateUPICode() {
+      const vpa = document.getElementById('upi-vpa-input')?.value.trim() || appData.settings.upi.vpa;
+      const amt = appData.settings.monthlyPrice;
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(vpa)}&pn=AdminBilling&am=${amt}&cu=INR`;
+
+      const vpaDisp = document.getElementById('quick-vpa-display');
+      const amtDisp = document.getElementById('quick-amount-display');
+      if (vpaDisp) vpaDisp.textContent = vpa;
+      if (amtDisp) amtDisp.textContent = `Monthly Subscription: ₹${amt}`;
+
+      if (typeof QRCode === 'undefined') return;
+
+      const quickContainer = document.getElementById('quick-qr-code');
+      if (quickContainer) {
+        quickContainer.innerHTML = '';
+        try {
+          new QRCode(quickContainer, { text: upiUrl, width: 110, height: 110 });
+        } catch(e) {}
+      }
+
+      const fullContainer = document.getElementById('full-qr-code');
+      if (fullContainer) {
+        fullContainer.innerHTML = '';
+        try {
+          new QRCode(fullContainer, { text: upiUrl, width: 130, height: 130 });
+        } catch(e) {}
+      }
+    }
+
+    function downloadQRCode() {
+      const img = document.querySelector('#full-qr-code img');
+      if (!img) return;
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = 'Admin_UPI_QR.png';
+      a.click();
+    }
+
+    function syncAllData() {
+      pushToFirestore();
+      showToast('Data refreshed!', 'info');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold bg-slate-900 text-white';
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3200);
+    }
+
+    window.onload = function() {
+      renderAllViews();
+      regenerateUPICode();
+    };
+  </script>
+</body>
+</html>
